@@ -1,0 +1,56 @@
+name: Generate Kubernetes Deployment manifest
+
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: "Name of the Deployment object and application container"
+        required: true
+        type: string
+      labels:
+        description: "Optional labels in the format key1=value1,key2=value2"
+        required: false
+        type: string
+      replicas:
+        description: "Number of replicas (defaults to 3 if not provided)"
+        required: false
+        type: number
+      envs:
+        description: "Optional environment variables in the format KEY1=VALUE1;KEY2=VALUE2"
+        required: false
+        type: string
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyyaml
+
+      - name: Generate Deployment manifest
+        run: |
+          python scripts/generate_deployment_manifest.py \
+            --name "${{ github.event.inputs.name }}" \
+            --labels "${{ github.event.inputs.labels }}" \
+            --replicas "${{ github.event.inputs.replicas }}" \
+            --envs "${{ github.event.inputs.envs }}"
+
+      - name: Display generated manifest
+        run: cat deployment.yaml
+
+      - name: Upload deployment.yaml as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-manifest
+          path: deployment.yaml
